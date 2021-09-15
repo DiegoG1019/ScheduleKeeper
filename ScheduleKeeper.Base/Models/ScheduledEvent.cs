@@ -33,7 +33,7 @@ public class ScheduledEvent : DescribedContextual
             _plans.CollectionChanged += PlansCollectionChanged;
             ClearPlans();
             Notify();
-            foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
+            foreach (var p in Enum.GetValues<DayOfWeek>())
                 Notify(GetPlansDay(p));
         }
     }
@@ -92,24 +92,24 @@ public class ScheduledEvent : DescribedContextual
         {
             case NotifyCollectionChangedAction.Add:
                 affected = e.NewItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct();
-                foreach (DayOfWeek p in affected)
+                foreach (var p in affected)
                     DaysToInvalidate.Enqueue(p);
                 _activeDays.AddRange(affected.Except(ActiveDays));
                 break;
             case NotifyCollectionChangedAction.Remove:
                 affected = e.OldItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct();
-                foreach (DayOfWeek p in affected)
+                foreach (var p in affected)
                     DaysToInvalidate.Enqueue(p);
                 _activeDays.Remove(affected);
                 break;
             case NotifyCollectionChangedAction.Replace:
                 affected = e.OldItems!.Cast<TimeFramePlan>().Concat(e.NewItems!.Cast<TimeFramePlan>()).Select(x => x.OnDay).Distinct();
-                foreach (DayOfWeek p in affected)
+                foreach (var p in affected)
                     DaysToInvalidate.Enqueue(p);
                 _activeDays.ClearAndRepopulate(affected);
                 break;
             case NotifyCollectionChangedAction.Reset:
-                foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
+                foreach (var p in Enum.GetValues<DayOfWeek>())
                     DaysToInvalidate.Enqueue(p);
                 _activeDays.Clear();
                 break;
@@ -121,7 +121,7 @@ public class ScheduledEvent : DescribedContextual
 
         while (DaysToInvalidate.Count > 0)
         {
-            DayOfWeek p = DaysToInvalidate.Dequeue();
+            var p = DaysToInvalidate.Dequeue();
             SetPlans(p, null);
             Notify(GetPlansDay(p));
         }
@@ -156,7 +156,7 @@ public class ScheduledEvent : DescribedContextual
 
     protected void ClearPlans()
     {
-        foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
+        foreach (var p in Enum.GetValues<DayOfWeek>())
             SetPlans(p, null);
     }
 
