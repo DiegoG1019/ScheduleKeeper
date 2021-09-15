@@ -3,13 +3,10 @@ using System.Collections.Specialized;
 
 namespace ScheduleKeeper.Base.Models;
 
-public class ScheduledEvent : Contextual
+public class ScheduledEvent : DescribedContextual
 {
     public IEnumerable<TimeFramePlan> this[DayOfWeek dayOfWeek] => GetPlans(dayOfWeek);
 
-    private string _title;
-    private string? _description;
-    private ObservableCollection<MutableKeyValuePair<string, string>> _notes = new();
     private ObservableCollection<TimeFramePlan> _plans = new();
     private IEnumerable<TimeFramePlan>? _sundayPlans;
     private IEnumerable<TimeFramePlan>? _mondayPlans;
@@ -18,46 +15,6 @@ public class ScheduledEvent : Contextual
     private IEnumerable<TimeFramePlan>? _thursdayPlans;
     private IEnumerable<TimeFramePlan>? _fridayPlans;
     private IEnumerable<TimeFramePlan>? _saturdayPlans;
-
-    public string Title
-    {
-        get => _title;
-        set
-        {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value), $"{nameof(Title)} cannot be set to null.");
-            if (value == _title)
-                return;
-            _title = value;
-            Notify();
-        }
-    }
-
-    public string? Description
-    {
-        get => _description;
-        set
-        {
-            if (value == _description)
-                return;
-            _description = value;
-            Notify();
-        }
-    }
-
-    public ObservableCollection<MutableKeyValuePair<string, string>> Notes
-    {
-        get => _notes;
-        set
-        {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value), $"{nameof(Notes)} cannot be set to null.");
-            if (ReferenceEquals(_notes, value))
-                return;
-            _notes = value;
-            Notify();
-        }
-    }
 
     public ObservableCollection<TimeFramePlan> Plans
     {
