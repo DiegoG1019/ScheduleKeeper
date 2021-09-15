@@ -7,6 +7,8 @@ public class ScheduledEvent : DescribedContextual
 {
     public IEnumerable<TimeFramePlan> this[DayOfWeek dayOfWeek] => GetPlans(dayOfWeek);
 
+    private readonly RangeEnabledObservableCollection<DayOfWeek> _activeDays = new();
+
     private ObservableCollection<TimeFramePlan> _plans = new();
     private IEnumerable<TimeFramePlan>? _sundayPlans;
     private IEnumerable<TimeFramePlan>? _mondayPlans;
@@ -26,15 +28,19 @@ public class ScheduledEvent : DescribedContextual
             if (ReferenceEquals(_plans, value))
                 return;
 
-            _plans.CollectionChanged -= Plans_CollectionChanged;
+            _plans.CollectionChanged -= PlansCollectionChanged;
             _plans = value;
-            _plans.CollectionChanged += Plans_CollectionChanged;
+            _plans.CollectionChanged += PlansCollectionChanged;
             ClearPlans();
             Notify();
-            foreach (var p in Enum.GetValues<DayOfWeek>())
+            foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
                 Notify(GetPlansDay(p));
         }
     }
+
+    public ReadOnlyObservableCollection<DayOfWeek> ActiveDays { get; init; }
+
+    public int TotalPlans => Plans.Count;
 
     public IEnumerable<TimeFramePlan> SundayPlans => _sundayPlans ?? FetchPlans(DayOfWeek.Sunday, ref _sundayPlans);
     public IEnumerable<TimeFramePlan> MondayPlans => _mondayPlans ?? FetchPlans(DayOfWeek.Monday, ref _mondayPlans);
@@ -44,10 +50,10 @@ public class ScheduledEvent : DescribedContextual
     public IEnumerable<TimeFramePlan> FridayPlans => _fridayPlans ?? FetchPlans(DayOfWeek.Friday, ref _fridayPlans);
     public IEnumerable<TimeFramePlan> SaturdayPlans => _saturdayPlans ?? FetchPlans(DayOfWeek.Saturday, ref _saturdayPlans);
 
-    public ScheduledEvent(string title)
+    public ScheduledEvent(string title) : base(title)
     {
-        _title = title;
-        Plans.CollectionChanged += Plans_CollectionChanged;
+        ActiveDays = new(_activeDays);
+        Plans.CollectionChanged += PlansCollectionChanged;
     }
 
     public IEnumerable<TimeFramePlan> GetPlans(DayOfWeek dayOfWeek)
@@ -79,31 +85,43 @@ public class ScheduledEvent : DescribedContextual
         };
 
     private readonly Queue<DayOfWeek> DaysToInvalidate = new();
-    protected void Plans_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    protected void PlansCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        IEnumerable<DayOfWeek> affected;
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (var p in e.NewItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct())
+                affected = e.NewItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct();
+                foreach (DayOfWeek p in affected)
                     DaysToInvalidate.Enqueue(p);
+                _activeDays.AddRange(affected.Except(ActiveDays));
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (var p in e.OldItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct())
+                affected = e.OldItems!.Cast<TimeFramePlan>().Select(x => x.OnDay).Distinct();
+                foreach (DayOfWeek p in affected)
                     DaysToInvalidate.Enqueue(p);
+                _activeDays.Remove(affected);
                 break;
             case NotifyCollectionChangedAction.Replace:
-                foreach (var p in e.OldItems!.Cast<TimeFramePlan>().Concat(e.NewItems!.Cast<TimeFramePlan>()).Select(x => x.OnDay).Distinct())
+                affected = e.OldItems!.Cast<TimeFramePlan>().Concat(e.NewItems!.Cast<TimeFramePlan>()).Select(x => x.OnDay).Distinct();
+                foreach (DayOfWeek p in affected)
                     DaysToInvalidate.Enqueue(p);
+                _activeDays.ClearAndRepopulate(affected);
                 break;
             case NotifyCollectionChangedAction.Reset:
-                foreach (var p in Enum.GetValues<DayOfWeek>())
+                foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
                     DaysToInvalidate.Enqueue(p);
+                _activeDays.Clear();
+                break;
+            case NotifyCollectionChangedAction.Move:
+                break;
+            default:
                 break;
         }
 
         while (DaysToInvalidate.Count > 0)
         {
-            var p = DaysToInvalidate.Dequeue();
+            DayOfWeek p = DaysToInvalidate.Dequeue();
             SetPlans(p, null);
             Notify(GetPlansDay(p));
         }
@@ -138,7 +156,7 @@ public class ScheduledEvent : DescribedContextual
 
     protected void ClearPlans()
     {
-        foreach (var p in Enum.GetValues<DayOfWeek>())
+        foreach (DayOfWeek p in Enum.GetValues<DayOfWeek>())
             SetPlans(p, null);
     }
 
