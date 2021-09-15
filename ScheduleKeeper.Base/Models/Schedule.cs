@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace ScheduleKeeper.Base.Models;
 
-#error under construction // Missing ways to organize ScheduledEvents by day
 public class Schedule : DescribedContextual
 {
     public IEnumerable<ScheduledEvent> this[DayOfWeek dayOfWeek] => GetEvents(dayOfWeek);
@@ -32,9 +31,9 @@ public class Schedule : DescribedContextual
             if (ReferenceEquals(_events, value))
                 return;
 
-            _events.CollectionChanged -= Events_CollectionChanged;
+            _events.CollectionChanged -= EventsCollectionChanged;
             _events = value;
-            _events.CollectionChanged += Events_CollectionChanged;
+            _events.CollectionChanged += EventsCollectionChanged;
             ClearEvents();
             Notify();
             foreach (var p in Enum.GetValues<DayOfWeek>())
@@ -81,25 +80,29 @@ public class Schedule : DescribedContextual
         };
 
     private readonly Queue<DayOfWeek> DaysToInvalidate = new();
-    protected void Events_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    protected void EventsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (var p in e.NewItems!.Cast<ScheduledEvent>().Select(x => x.).Distinct())
+                foreach (var p in e.NewItems!.Cast<ScheduledEvent>().SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().Select(x => x.OnDay).Distinct())
+                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Replace:
-                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().Concat(e.NewItems!.Cast<ScheduledEvent>()).Select(x => x.OnDay).Distinct())
+                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().Concat(e.NewItems!.Cast<ScheduledEvent>()).SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Reset:
                 foreach (var p in Enum.GetValues<DayOfWeek>())
                     DaysToInvalidate.Enqueue(p);
+                break;
+            case NotifyCollectionChangedAction.Move:
+                break;
+            default:
                 break;
         }
 
@@ -112,7 +115,7 @@ public class Schedule : DescribedContextual
     }
 
     protected IEnumerable<ScheduledEvent> FetchEvents(DayOfWeek dayOfWeek, ref IEnumerable<ScheduledEvent>? plans)
-        => plans = Events.Where(s => s.OnDay == dayOfWeek).ToArray();
+        => plans = Events.Where(s => s.ActiveDays.Any(x => x == dayOfWeek));
 
     protected ref IEnumerable<ScheduledEvent>? GetEventsRef(DayOfWeek dayOfWeek)
     {
