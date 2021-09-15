@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "ScheduleKeeper.WinUI": {
+      "commandName": "AppContainer"
+    }
+  }
+}
