@@ -5,6 +5,7 @@ global using DiegoG.Utilities;
 global using DiegoG.Utilities.IO;
 global using DiegoG.Utilities.Settings;
 global using System.Threading.Tasks;
+global using ScheduleKeeper.Base.Types;
 
 namespace ScheduleKeeper.Base
 {
