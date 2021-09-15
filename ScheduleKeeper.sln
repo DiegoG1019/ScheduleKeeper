@@ -3,9 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31710.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScheduleKeeper", "ScheduleKeeper\ScheduleKeeper\ScheduleKeeper.csproj", "{AFC8C953-C93A-40BF-92A3-B783B6EF424B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScheduleKeeper.WPF", "ScheduleKeeper.WPF\ScheduleKeeper.WPF.csproj", "{87F158FC-1736-4B00-B8BE-4B3F8738FA92}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScheduleKeeper.WinUI", "ScheduleKeeper\ScheduleKeeper.WinUI\ScheduleKeeper.WinUI.csproj", "{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScheduleKeeper.Base", "ScheduleKeeper.Base\ScheduleKeeper.Base.csproj", "{71066B0F-897F-41C5-9C3F-73FA44BB56D8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F9A0D454-F648-4E98-9E90-1ED0B96F0EE8}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,18 +18,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AFC8C953-C93A-40BF-92A3-B783B6EF424B}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0D280975-F8B8-44A3-AAB1-7344DA15D6E5}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{87F158FC-1736-4B00-B8BE-4B3F8738FA92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87F158FC-1736-4B00-B8BE-4B3F8738FA92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87F158FC-1736-4B00-B8BE-4B3F8738FA92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87F158FC-1736-4B00-B8BE-4B3F8738FA92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71066B0F-897F-41C5-9C3F-73FA44BB56D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71066B0F-897F-41C5-9C3F-73FA44BB56D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71066B0F-897F-41C5-9C3F-73FA44BB56D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71066B0F-897F-41C5-9C3F-73FA44BB56D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
