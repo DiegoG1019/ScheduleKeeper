@@ -17,6 +17,7 @@ public class ScheduledEvent : DescribedContextual
     private IEnumerable<TimeFramePlan>? _thursdayPlans;
     private IEnumerable<TimeFramePlan>? _fridayPlans;
     private IEnumerable<TimeFramePlan>? _saturdayPlans;
+    private int? _planCount;
 
     public ObservableCollection<TimeFramePlan> Plans
     {
@@ -38,7 +39,7 @@ public class ScheduledEvent : DescribedContextual
 
     public ReadOnlyObservableCollection<DayOfWeek> ActiveDays { get; init; }
 
-    public int TotalPlans => Plans.Count;
+    public int TotalPlans => _planCount ??= Plans.Count;
 
     public IEnumerable<TimeFramePlan> SundayPlans => _sundayPlans ??= FetchPlans(DayOfWeek.Sunday);
     public IEnumerable<TimeFramePlan> MondayPlans => _mondayPlans ??= FetchPlans(DayOfWeek.Monday);
@@ -116,6 +117,8 @@ public class ScheduledEvent : DescribedContextual
             default:
                 break;
         }
+
+        _planCount = null;
 
         while (DaysToInvalidate.Count > 0)
         {
