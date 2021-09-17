@@ -140,6 +140,41 @@ public class Schedule : DescribedContextual
 
         eventCount = null;
     }
+
+    private void ScheduledEventChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        var ev = (ScheduledEvent)sender!;
+        switch (e.PropertyName)
+        {
+            case nameof(ScheduledEvent.SundayPlans):
+                SetEvents(DayOfWeek.Sunday, null);
+                break;
+            case nameof(ScheduledEvent.MondayPlans):
+                SetEvents(DayOfWeek.Monday, null);
+                break;
+            case nameof(ScheduledEvent.TuesdayPlans):
+                SetEvents(DayOfWeek.Tuesday, null);
+                break;
+            case nameof(ScheduledEvent.WednesdayPlans):
+                SetEvents(DayOfWeek.Wednesday, null);
+                break;
+            case nameof(ScheduledEvent.ThursdayPlans):
+                SetEvents(DayOfWeek.Thursday, null);
+                break;
+            case nameof(ScheduledEvent.FridayPlans):
+                SetEvents(DayOfWeek.Friday, null);
+                break;
+            case nameof(ScheduledEvent.SaturdayPlans):
+                SetEvents(DayOfWeek.Saturday, null);
+                break;
+            case nameof(ScheduledEvent.ActiveDays):
+                _activeDays = null;
+                Notify(nameof(ActiveDays));
+                break;
+            case nameof(ScheduledEvent.TotalPlans):
+                planCount = null;
+                Notify(nameof(PlanCount));
+                break;
         }
     }
 
