@@ -42,13 +42,13 @@ public class ScheduledEvent : DescribedContextual
 
     public int TotalPlans => Plans.Count;
 
-    public IEnumerable<TimeFramePlan> SundayPlans => _sundayPlans ?? FetchPlans(DayOfWeek.Sunday, ref _sundayPlans);
-    public IEnumerable<TimeFramePlan> MondayPlans => _mondayPlans ?? FetchPlans(DayOfWeek.Monday, ref _mondayPlans);
-    public IEnumerable<TimeFramePlan> TuesdayPlans => _tuesdayPlans ?? FetchPlans(DayOfWeek.Tuesday, ref _tuesdayPlans);
-    public IEnumerable<TimeFramePlan> WednesdayPlans => _wednesdayPlans ?? FetchPlans(DayOfWeek.Wednesday, ref _wednesdayPlans);
-    public IEnumerable<TimeFramePlan> ThursdayPlans => _thursdayPlans ?? FetchPlans(DayOfWeek.Thursday, ref _thursdayPlans);
-    public IEnumerable<TimeFramePlan> FridayPlans => _fridayPlans ?? FetchPlans(DayOfWeek.Friday, ref _fridayPlans);
-    public IEnumerable<TimeFramePlan> SaturdayPlans => _saturdayPlans ?? FetchPlans(DayOfWeek.Saturday, ref _saturdayPlans);
+    public IEnumerable<TimeFramePlan> SundayPlans => _sundayPlans ??= FetchPlans(DayOfWeek.Sunday);
+    public IEnumerable<TimeFramePlan> MondayPlans => _mondayPlans ??= FetchPlans(DayOfWeek.Monday);
+    public IEnumerable<TimeFramePlan> TuesdayPlans => _tuesdayPlans ??= FetchPlans(DayOfWeek.Tuesday);
+    public IEnumerable<TimeFramePlan> WednesdayPlans => _wednesdayPlans ??= FetchPlans(DayOfWeek.Wednesday);
+    public IEnumerable<TimeFramePlan> ThursdayPlans => _thursdayPlans ??= FetchPlans(DayOfWeek.Thursday);
+    public IEnumerable<TimeFramePlan> FridayPlans => _fridayPlans ??= FetchPlans(DayOfWeek.Friday);
+    public IEnumerable<TimeFramePlan> SaturdayPlans => _saturdayPlans ??= FetchPlans(DayOfWeek.Saturday);
 
     public ScheduledEvent(string title) : base(title)
     {
@@ -127,8 +127,8 @@ public class ScheduledEvent : DescribedContextual
         }
     }
 
-    protected IEnumerable<TimeFramePlan> FetchPlans(DayOfWeek dayOfWeek, ref IEnumerable<TimeFramePlan>? plans)
-        => plans = Plans.Where(s => s.OnDay == dayOfWeek).ToArray();
+    protected IEnumerable<TimeFramePlan> FetchPlans(DayOfWeek dayOfWeek)
+        => Plans.Where(s => s.OnDay == dayOfWeek).ToArray();
 
     protected ref IEnumerable<TimeFramePlan>? GetPlansRef(DayOfWeek dayOfWeek)
     {
