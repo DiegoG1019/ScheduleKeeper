@@ -71,6 +71,17 @@ public class Schedule : DescribedContextual
         };
 
     public Schedule(string title) : base(title) => Events.CollectionChanged += Events_CollectionChanged;
+    public IEnumerable<TimeFrame> GetTimeFrames(TimeSpan? step = null)
+        => step is null ? GetCompactTimeFrames() : GetSteppedTimeFrames((TimeSpan)step);
+
+    protected virtual IEnumerable<TimeFrame> GetSteppedTimeFrames(TimeSpan step)
+    {
+    }
+
+    protected virtual IEnumerable<TimeFrame> GetCompactTimeFrames()
+    {
+    }
+
 
     protected string GetEventsDay(DayOfWeek dayOfWeek)
         => dayOfWeek switch
