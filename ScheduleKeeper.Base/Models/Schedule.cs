@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,9 @@ public class Schedule : DescribedContextual
     private IEnumerable<ScheduledEvent>? _thursdayEvents;
     private IEnumerable<ScheduledEvent>? _fridayEvents;
     private IEnumerable<ScheduledEvent>? _saturdayEvents;
+    private IEnumerable<DayOfWeek>? _activeDays;
+    private int? eventCount;
+    private int? planCount;
 
     public ObservableCollection<ScheduledEvent> Events
     {
@@ -36,18 +40,21 @@ public class Schedule : DescribedContextual
             _events.CollectionChanged += EventsCollectionChanged;
             ClearEvents();
             Notify();
-            foreach (var p in Enum.GetValues<DayOfWeek>())
-                Notify(GetEventsDay(p));
         }
     }
 
-    public IEnumerable<ScheduledEvent> SundayEvents => _sundayEvents ?? FetchEvents(DayOfWeek.Sunday, ref _sundayEvents);
-    public IEnumerable<ScheduledEvent> MondayEvents => _mondayEvents ?? FetchEvents(DayOfWeek.Monday, ref _mondayEvents);
-    public IEnumerable<ScheduledEvent> TuesdayEvents => _tuesdayEvents ?? FetchEvents(DayOfWeek.Tuesday, ref _tuesdayEvents);
-    public IEnumerable<ScheduledEvent> WednesdayEvents => _wednesdayEvents ?? FetchEvents(DayOfWeek.Wednesday, ref _wednesdayEvents);
-    public IEnumerable<ScheduledEvent> ThursdayEvents => _thursdayEvents ?? FetchEvents(DayOfWeek.Thursday, ref _thursdayEvents);
-    public IEnumerable<ScheduledEvent> FridayEvents => _fridayEvents ?? FetchEvents(DayOfWeek.Friday, ref _fridayEvents);
-    public IEnumerable<ScheduledEvent> SaturdayEvents => _saturdayEvents ?? FetchEvents(DayOfWeek.Saturday, ref _saturdayEvents);
+    public IEnumerable<ScheduledEvent> SundayEvents => _sundayEvents ??= FetchEvents(DayOfWeek.Sunday);
+    public IEnumerable<ScheduledEvent> MondayEvents => _mondayEvents ??= FetchEvents(DayOfWeek.Monday);
+    public IEnumerable<ScheduledEvent> TuesdayEvents => _tuesdayEvents ??= FetchEvents(DayOfWeek.Tuesday);
+    public IEnumerable<ScheduledEvent> WednesdayEvents => _wednesdayEvents ??= FetchEvents(DayOfWeek.Wednesday);
+    public IEnumerable<ScheduledEvent> ThursdayEvents => _thursdayEvents ??= FetchEvents(DayOfWeek.Thursday);
+    public IEnumerable<ScheduledEvent> FridayEvents => _fridayEvents ??= FetchEvents(DayOfWeek.Friday);
+    public IEnumerable<ScheduledEvent> SaturdayEvents => _saturdayEvents ??= FetchEvents(DayOfWeek.Saturday);
+
+    public IEnumerable<DayOfWeek> ActiveDays => _activeDays ??= _events.SelectMany(x => x.ActiveDays).Distinct();
+
+    public int EventCount => eventCount ??= Events.Count;
+    public int PlanCount => planCount ??= Events.Sum(x => x.Plans.Count);
 
     public IEnumerable<ScheduledEvent> GetEvents(DayOfWeek dayOfWeek)
         => dayOfWeek switch
@@ -114,8 +121,8 @@ public class Schedule : DescribedContextual
         }
     }
 
-    protected IEnumerable<ScheduledEvent> FetchEvents(DayOfWeek dayOfWeek, ref IEnumerable<ScheduledEvent>? plans)
-        => plans = Events.Where(s => s.ActiveDays.Any(x => x == dayOfWeek));
+    protected IEnumerable<ScheduledEvent> FetchEvents(DayOfWeek dayOfWeek)
+        => Events.Where(s => s.ActiveDays.Any(x => x == dayOfWeek));
 
     protected ref IEnumerable<ScheduledEvent>? GetEventsRef(DayOfWeek dayOfWeek)
     {
@@ -148,5 +155,8 @@ public class Schedule : DescribedContextual
     }
 
     protected void SetEvents(DayOfWeek dayOfWeek, IEnumerable<ScheduledEvent>? plans)
-        => GetEventsRef(dayOfWeek) = plans;
+    {
+        GetEventsRef(dayOfWeek) = plans;
+        Notify(GetEventsDay(dayOfWeek));
+    }
 }
