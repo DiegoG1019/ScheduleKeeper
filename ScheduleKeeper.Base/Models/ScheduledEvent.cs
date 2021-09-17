@@ -33,8 +33,6 @@ public class ScheduledEvent : DescribedContextual
             _plans.CollectionChanged += PlansCollectionChanged;
             ClearPlans();
             Notify();
-            foreach (var p in Enum.GetValues<DayOfWeek>())
-                Notify(GetPlansDay(p));
         }
     }
 
@@ -123,7 +121,6 @@ public class ScheduledEvent : DescribedContextual
         {
             var p = DaysToInvalidate.Dequeue();
             SetPlans(p, null);
-            Notify(GetPlansDay(p));
         }
     }
 
@@ -161,5 +158,8 @@ public class ScheduledEvent : DescribedContextual
     }
 
     protected void SetPlans(DayOfWeek dayOfWeek, IEnumerable<TimeFramePlan>? plans)
-        => GetPlansRef(dayOfWeek) = plans;
+    {
+        GetPlansRef(dayOfWeek) = plans;
+        Notify(GetPlansDay(dayOfWeek));
+    }
 }
