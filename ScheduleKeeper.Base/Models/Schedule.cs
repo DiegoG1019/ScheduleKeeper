@@ -89,18 +89,23 @@ public class Schedule : DescribedContextual
     private readonly Queue<DayOfWeek> DaysToInvalidate = new();
     protected void EventsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        IEnumerable<ScheduledEvent>? newitems = null;
+        IEnumerable<ScheduledEvent>? olditems = null;
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (var p in e.NewItems!.Cast<ScheduledEvent>().SelectMany(x => x.ActiveDays).Distinct())
+                foreach (var p in (newitems = e.NewItems!.Cast<ScheduledEvent>()).SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().SelectMany(x => x.ActiveDays).Distinct())
+                foreach (var p in (olditems = e.OldItems!.Cast<ScheduledEvent>()).SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Replace:
-                foreach (var p in e.OldItems!.Cast<ScheduledEvent>().Concat(e.NewItems!.Cast<ScheduledEvent>()).SelectMany(x => x.ActiveDays).Distinct())
+                foreach (var p in (olditems = e.OldItems!.Cast<ScheduledEvent>())
+                                                         .Concat(newitems = e.NewItems!.Cast<ScheduledEvent>())
+                                                         .SelectMany(x => x.ActiveDays)
+                                                         .Distinct())
                     DaysToInvalidate.Enqueue(p);
                 break;
             case NotifyCollectionChangedAction.Reset:
@@ -113,11 +118,28 @@ public class Schedule : DescribedContextual
                 break;
         }
 
+        if (olditems is not null)
+            foreach (var ev in olditems)
+                ev.PropertyChanged -= ScheduledEventChanged;
+
+        if(newitems is not null)
+            foreach (var ev in newitems)
+                ev.PropertyChanged += ScheduledEventChanged;
+
+        if(DaysToInvalidate.Count is >0)
+        {
+            _activeDays = null;
+            Notify(nameof(ActiveDays));
+        }
+
         while (DaysToInvalidate.Count > 0)
         {
             var p = DaysToInvalidate.Dequeue();
             SetEvents(p, null);
-            Notify(GetEventsDay(p));
+        }
+
+        eventCount = null;
+    }
         }
     }
 
