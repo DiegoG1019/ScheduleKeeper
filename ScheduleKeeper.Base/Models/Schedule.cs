@@ -98,6 +98,32 @@ public class Schedule : DescribedContextual
 
     protected virtual IEnumerable<TimeFrame> GetCompactTimeFrames()
     {
+        var events = _events.SelectMany(x => x.Plans).ToArray();
+
+        List<TimeFramePlan> active = new();
+        active.AddRange(events);
+        var start = GetEarliest(active);
+        var end = start;
+        IEnumerable<TimeFramePlan> selection;
+        while (active.Count is not 0)
+        {
+            for(int i = 0; i < active.Count; i++)
+                if(active[i].StartTime < start)
+                    active.RemoveAt(i--);
+
+            selection = active.Where(x => x.StartTime == start);
+            if (!selection.Any())
+            {
+                start = GetEarliest(active);
+                continue;
+            }
+
+            end = selection.Max(x => x.EndTime);
+            yield return new(start, end);
+            start = end;
+        }
+
+        static TimeOnly GetEarliest(IEnumerable<TimeFramePlan> en) => en.Min(x => x.StartTime);
     }
 
     public Schedule(string title) : base(title) => Events.CollectionChanged += EventsCollectionChanged;
