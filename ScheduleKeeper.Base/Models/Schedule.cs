@@ -70,7 +70,6 @@ public class Schedule : DescribedContextual
                 $"The allowed range is between 0 and 6, or from {nameof(DayOfWeek.Sunday)} to {nameof(DayOfWeek.Saturday)}"),
         };
 
-    public Schedule(string title) : base(title) => Events.CollectionChanged += Events_CollectionChanged;
     public IEnumerable<TimeFrame> GetTimeFrames(TimeSpan? step = null)
         => step is null ? GetCompactTimeFrames() : GetSteppedTimeFrames((TimeSpan)step);
 
@@ -82,6 +81,7 @@ public class Schedule : DescribedContextual
     {
     }
 
+    public Schedule(string title) : base(title) => Events.CollectionChanged += EventsCollectionChanged;
 
     protected string GetEventsDay(DayOfWeek dayOfWeek)
         => dayOfWeek switch
