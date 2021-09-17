@@ -34,4 +34,10 @@ public class TimeFrame : Contextual
     }
 
     public TimeSpan Duration { get; private set; }
+
+    public TimeFrame(TimeOnly start, TimeOnly end)
+    {
+        _startTime = start;
+        _endTime = end;
+    }
 }

@@ -15,4 +15,6 @@ public class TimeFramePlan : TimeFrame
             Notify();
         }
     }
+
+    public TimeFramePlan(DayOfWeek day, TimeOnly start, TimeOnly end) : base(start, end) => _dayOfWeek = day;
 }
