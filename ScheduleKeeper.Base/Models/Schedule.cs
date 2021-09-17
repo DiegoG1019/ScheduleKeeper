@@ -75,6 +75,25 @@ public class Schedule : DescribedContextual
 
     protected virtual IEnumerable<TimeFrame> GetSteppedTimeFrames(TimeSpan step)
     {
+        _ = _events.SelectMany(x => x.Plans).Aggregate(
+        new
+        {
+            EarliestStart = TimeOnly.MinValue,
+            LatestEnd = TimeOnly.MinValue
+        },
+        (accumulator, o) => new
+        {
+            EarliestStart = DGHelper.Min(o.StartTime, accumulator.EarliestStart),
+            LatestEnd = DGHelper.Max(o.EndTime, accumulator.LatestEnd)
+        }) is { EarliestStart: var estart, LatestEnd: var latend };
+
+        var cstep = estart.ToTimeSpan() + step;
+        var cstept = TimeOnly.FromTimeSpan(cstep);
+
+        var x = new TimeFrame(estart, cstept); 
+        yield return x;
+        while (cstept < latend)
+            yield return new TimeFrame(cstept, cstept = TimeOnly.FromTimeSpan(cstep += step));
     }
 
     protected virtual IEnumerable<TimeFrame> GetCompactTimeFrames()
