@@ -7,3 +7,5 @@ namespace ScheduleKeeper.WPF;
 /// </summary>
 public partial class App : Application
 {
+    public Language Language => Settings<Language>.Current;
+}
