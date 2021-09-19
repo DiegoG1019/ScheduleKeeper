@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NeoSmart.AsyncLock;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ScheduleKeeper.Base.Models;
 
-public class Schedule : DescribedContextual
+public class Schedule : DescribedContextual, IObservable<ScheduledEventNotification>, IObserver<ScheduledEventNotification>
 {
     public IEnumerable<ScheduledEvent> this[DayOfWeek dayOfWeek] => GetEvents(dayOfWeek);
 
@@ -25,6 +26,8 @@ public class Schedule : DescribedContextual
     private int? eventCount;
     private int? planCount;
 
+    private readonly Dictionary<ScheduledEvent, IDisposable> Subscriptions = new();
+
     public ObservableCollection<ScheduledEvent> Events
     {
         get => _events;
@@ -39,6 +42,7 @@ public class Schedule : DescribedContextual
             _events = value;
             _events.CollectionChanged += EventsCollectionChanged;
             ClearEvents();
+            ClearAndRepopulateSubscriptions();
             Notify();
         }
     }
@@ -71,21 +75,23 @@ public class Schedule : DescribedContextual
         };
 
     public IEnumerable<TimeFrame> GetTimeFrames(TimeSpan? step = null)
-        => step is null ? GetCompactTimeFrames() : GetSteppedTimeFrames((TimeSpan)step);
+        => step is null or
+        { Ticks: 9223372036854775807 or -9223372036854775808 } ?
+        GetCompactTimeFrames() :
+        GetSteppedTimeFrames((TimeSpan)step);
 
     protected virtual IEnumerable<TimeFrame> GetSteppedTimeFrames(TimeSpan step)
     {
-        _ = _events.SelectMany(x => x.Plans).Aggregate(
-        new
-        {
-            EarliestStart = TimeOnly.MinValue,
-            LatestEnd = TimeOnly.MinValue
-        },
-        (accumulator, o) => new
-        {
-            EarliestStart = DGHelper.Min(o.StartTime, accumulator.EarliestStart),
-            LatestEnd = DGHelper.Max(o.EndTime, accumulator.LatestEnd)
-        }) is { EarliestStart: var estart, LatestEnd: var latend };
+        (var estart, var latend) = _events.SelectMany(x => x.Plans).Aggregate(
+        (
+            EarliestStart: TimeOnly.MaxValue,
+            LatestEnd: TimeOnly.MinValue
+        ),
+        (accumulator, o) =>
+        (
+            EarliestStart: DGHelper.Min(o.StartTime, accumulator.EarliestStart),
+            LatestEnd: DGHelper.Max(o.EndTime, accumulator.LatestEnd)
+        ));
 
         var cstep = estart.ToTimeSpan() + step;
         var cstept = TimeOnly.FromTimeSpan(cstep);
@@ -95,7 +101,7 @@ public class Schedule : DescribedContextual
         while (cstept < latend)
             yield return new TimeFrame(cstept, cstept = TimeOnly.FromTimeSpan(cstep += step));
     }
-
+#warning needs some work. It doesn't take into account lengths from previous starting times
     protected virtual IEnumerable<TimeFrame> GetCompactTimeFrames()
     {
         var events = _events.SelectMany(x => x.Plans).ToArray();
@@ -105,11 +111,13 @@ public class Schedule : DescribedContextual
         var start = GetEarliest(active);
         var end = start;
         IEnumerable<TimeFramePlan> selection;
-        while (active.Count is not 0)
+        for (; ; )
         {
-            for(int i = 0; i < active.Count; i++)
-                if(active[i].StartTime < start)
+            for (int i = 0; i < active.Count; i++)
+                if (active[i].StartTime < start)
                     active.RemoveAt(i--);
+            if (active.Count is 0)
+                break;
 
             selection = active.Where(x => x.StartTime == start);
             if (!selection.Any())
@@ -118,7 +126,7 @@ public class Schedule : DescribedContextual
                 continue;
             }
 
-            end = selection.Max(x => x.EndTime);
+            end = selection.Min(x => x.EndTime);
             yield return new(start, end);
             start = end;
         }
@@ -126,7 +134,11 @@ public class Schedule : DescribedContextual
         static TimeOnly GetEarliest(IEnumerable<TimeFramePlan> en) => en.Min(x => x.StartTime);
     }
 
-    public Schedule(string title) : base(title) => Events.CollectionChanged += EventsCollectionChanged;
+    public Schedule(string title) : base(title) 
+    {
+        Events.CollectionChanged += EventsCollectionChanged;
+        ClearAndRepopulateSubscriptions();
+    }
 
     protected string GetEventsDay(DayOfWeek dayOfWeek)
         => dayOfWeek switch
@@ -156,6 +168,7 @@ public class Schedule : DescribedContextual
             case NotifyCollectionChangedAction.Remove:
                 foreach (var p in (olditems = e.OldItems!.Cast<ScheduledEvent>()).SelectMany(x => x.ActiveDays).Distinct())
                     DaysToInvalidate.Enqueue(p);
+
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (var p in (olditems = e.OldItems!.Cast<ScheduledEvent>())
@@ -176,11 +189,19 @@ public class Schedule : DescribedContextual
 
         if (olditems is not null)
             foreach (var ev in olditems)
+            {
                 ev.PropertyChanged -= ScheduledEventChanged;
+                if (!Subscriptions.ContainsKey(ev))
+                    Subscriptions.Add(ev, ev.Subscribe(this));
+            }
 
         if(newitems is not null)
             foreach (var ev in newitems)
+            {
                 ev.PropertyChanged += ScheduledEventChanged;
+                if (Subscriptions.TryGetValue(ev, out var val))
+                    val.Dispose();
+            }
 
         if(DaysToInvalidate.Count is >0)
         {
@@ -195,6 +216,15 @@ public class Schedule : DescribedContextual
         }
 
         eventCount = null;
+    }
+
+    private void ClearAndRepopulateSubscriptions()
+    {
+        foreach (var ev in Subscriptions.Values)
+            ev.Dispose();
+        Subscriptions.Clear();
+        foreach (var ev in Events)
+            Subscriptions.Add(ev, ev.Subscribe(this));
     }
 
     private void ScheduledEventChanged(object? sender, PropertyChangedEventArgs e)
@@ -272,4 +302,104 @@ public class Schedule : DescribedContextual
         GetEventsRef(dayOfWeek) = plans;
         Notify(GetEventsDay(dayOfWeek));
     }
+
+    #region IObservable
+
+    private readonly AsyncLock alock = new();
+    private readonly List<IObserver<ScheduledEventNotification>> Observers = new();
+
+    public IDisposable Subscribe(IObserver<ScheduledEventNotification> observer)
+    {
+        if (!Observers.Contains(observer))
+            using (alock.Lock())
+                Observers.Add(observer);
+        return new Unsubscriber(Observers, observer, alock);
+    }
+
+    public async Task<IAsyncDisposable> SubscribeAsync(IObserver<ScheduledEventNotification> observer)
+    {
+        if (!Observers.Contains(observer))
+            using (await alock.LockAsync())
+                Observers.Add(observer);
+        return new Unsubscriber(Observers, observer, alock);
+    }
+
+    #region Unsubscriber
+    private class Unsubscriber : IDisposable, IAsyncDisposable
+    {
+        private readonly List<IObserver<ScheduledEventNotification>> Observers;
+        private readonly IObserver<ScheduledEventNotification> Observer;
+        private readonly AsyncLock AsyncLock;
+
+        public Unsubscriber(List<IObserver<ScheduledEventNotification>> observers, IObserver<ScheduledEventNotification> observer, AsyncLock asyncLock)
+        {
+            Observers = observers;
+            Observer = observer;
+            AsyncLock = asyncLock;
+        }
+
+        public void Dispose()
+        {
+            using (AsyncLock.Lock())
+                if (Observer != null && Observers.Contains(Observer))
+                    Observers.Remove(Observer);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            using (await AsyncLock.LockAsync())
+                if (Observer != null && Observers.Contains(Observer))
+                    Observers.Remove(Observer);
+        }
+    }
+
+    #endregion
+
+    #endregion
+
+    #region IObserver
+
+    public async void OnCompleted()
+    {
+        using (await alock.LockAsync())
+            foreach (var o in Observers)
+                try
+                {
+                    o.OnCompleted();
+                }
+                catch
+                {
+                    continue;
+                }
+    }
+
+    public async void OnError(Exception error)
+    {
+        using (await alock.LockAsync())
+            foreach (var o in Observers)
+                try
+                {
+                    o.OnError(error);
+                }
+                catch
+                {
+                    continue;
+                }
+    }
+
+    public async void OnNext(ScheduledEventNotification value)
+    {
+        using (await alock.LockAsync())
+            foreach (var o in Observers)
+                try
+                {
+                    o.OnNext(value);
+                }
+                catch
+                {
+                    continue;
+                }
+    }
+
+    #endregion
 }
