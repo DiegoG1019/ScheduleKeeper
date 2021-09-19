@@ -27,7 +27,7 @@ public class TimeFrame : Contextual
             if (_endTime == value)
                 return;
             _endTime = value;
-            Duration = StartTime - EndTime;
+            Duration = EndTime - StartTime;
             Notify();
             Notify(nameof(Duration));
         }
@@ -39,5 +39,6 @@ public class TimeFrame : Contextual
     {
         _startTime = start;
         _endTime = end;
+        Duration = end - start;
     }
 }
