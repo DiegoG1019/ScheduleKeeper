@@ -16,5 +16,7 @@ public class TimeFramePlan : TimeFrame
         }
     }
 
+    public override int GetHashCode() => HashCode.Combine(OnDay, StartTime, EndTime);
+
     public TimeFramePlan(DayOfWeek day, TimeOnly start, TimeOnly end) : base(start, end) => _dayOfWeek = day;
 }
