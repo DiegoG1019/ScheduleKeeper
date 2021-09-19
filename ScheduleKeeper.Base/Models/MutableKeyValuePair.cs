@@ -24,4 +24,10 @@ public class MutableKeyValuePair<T1, T2> : Contextual
             Notify();
         }
     }
+
+    public void Deconstruct(out T1? key, out T2? value)
+    {
+        key = Key;
+        value = Value;
+    }
 }
